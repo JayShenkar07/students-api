@@ -2,16 +2,21 @@ package response
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/go-playground/validator/v10"
 )
+
 //Struct to show meaningful error
 type Response struct{
-	Status string
-	Error string
+	Status string `json:"status"`
+	Error string `json:"error"`
 }
 
 const (
-	StatusOK = "OK"
+	StatusOK = "OK" 
 	StatusError = "Error" 
 )
 
@@ -25,5 +30,23 @@ func GeneralError(err error) Response {
 	return Response{
 		Status: StatusError,
 		Error: err.Error(),
+	}
+}
+
+func ValidationError(errs validator.ValidationErrors) Response {
+	var errMsgs[]string
+
+	for _, err := range errs{
+		switch err.ActualTag(){
+		case "required":
+			errMsgs = append(errMsgs, fmt.Sprintf("Field %s is required ", err.Field()))
+		default:
+			errMsgs = append(errMsgs, fmt.Sprintf("Field %s is invalid ", err.Field()))
+		}
+	}
+
+	return Response{
+		Status: StatusError,
+		Error: strings.Join(errMsgs, ","),
 	}
 }
